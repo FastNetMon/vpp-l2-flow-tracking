@@ -58,3 +58,31 @@ jobs:
           name: l2flow_plugin
           path: artifacts/l2flow_plugin.so
           if-no-files-found: error
+
+      - name: Build deb package
+        run: |
+          VPP_TAG="vpp$(echo "$VPP_REF" | tr -dc '0-9')"
+          VERSION="1.0.${{ github.run_number }}"
+          PKGDIR=pkg/l2flow-plugin
+          mkdir -p "$PKGDIR/usr/lib/x86_64-linux-gnu/vpp_plugins" "$PKGDIR/DEBIAN"
+          install -m 644 artifacts/l2flow_plugin.so "$PKGDIR/usr/lib/x86_64-linux-gnu/vpp_plugins/"
+          cat > "$PKGDIR/DEBIAN/control" <<EOF
+          Package: l2flow-plugin
+          Version: $VERSION
+          Architecture: amd64
+          Maintainer: vpp-l2-flow-tracking
+          Section: net
+          Priority: optional
+          Description: VPP l2flow plugin (SFDP flow tracking for L2 xconnect)
+           Built against VPP $VPP_REF (commit $(git -C vpp rev-parse --short HEAD)).
+          EOF
+          dpkg-deb --build --root-owner-group "$PKGDIR" "artifacts/l2flow-plugin_amd64-${VPP_TAG}.deb"
+          dpkg --contents "artifacts/l2flow-plugin_amd64-${VPP_TAG}.deb"
+          dpkg --info "artifacts/l2flow-plugin_amd64-${VPP_TAG}.deb"
+
+      - name: Upload deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2flow-plugin-deb
+          path: artifacts/*.deb
+          if-no-files-found: error
