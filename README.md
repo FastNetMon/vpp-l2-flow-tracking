@@ -3,6 +3,10 @@
 VPP 26.06 plugin (`l2flow`) that adds SFDP-based stateful flow tracking to an
 L2 cross-connect setup, without changing how packets are forwarded.
 
+# Warning
+
+It's PoC level, experimental lab code. Not suitable for production usage
+
 ## How it works
 
 ```
