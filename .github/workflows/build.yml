@@ -1,0 +1,58 @@
+name: Build VPP plugin
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  VPP_REPO: https://github.com/FDio/vpp.git
+  VPP_REF: stable/2606
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout plugin
+        uses: actions/checkout@v4
+
+      - name: Clone VPP ${{ env.VPP_REF }}
+        run: |
+          git clone --depth 1 --branch "$VPP_REF" "$VPP_REPO" vpp
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: vpp-${{ env.VPP_REF }}
+
+      - name: Install VPP build dependencies
+        run: |
+          cd vpp
+          sudo -E apt-get update
+          make UNATTENDED=yes install-dep
+          make UNATTENDED=yes install-ext-deps
+
+      - name: Inject plugin into VPP source tree
+        run: |
+          cp -r src/l2flow vpp/src/plugins/l2flow
+
+      - name: Build VPP (release)
+        run: |
+          cd vpp
+          make build-release
+
+      - name: Check plugin binary
+        run: |
+          PLUGIN=$(find vpp/build-root/install-vpp-native -name 'l2flow_plugin.so' -print -quit)
+          test -n "$PLUGIN" || { echo "l2flow_plugin.so not built"; exit 1; }
+          echo "Built: $PLUGIN"
+          mkdir -p artifacts
+          cp "$PLUGIN" artifacts/
+
+      - name: Upload plugin binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: l2flow_plugin
+          path: artifacts/l2flow_plugin.so
+          if-no-files-found: error

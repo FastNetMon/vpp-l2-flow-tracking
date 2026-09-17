@@ -1,0 +1,7 @@
+vpp/
+build/
+artifacts/
+*.so
+*.o
+compile_commands.json
+.cache/
