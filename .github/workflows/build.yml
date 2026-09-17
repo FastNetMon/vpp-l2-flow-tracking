@@ -26,25 +26,27 @@ jobs:
         with:
           key: vpp-${{ env.VPP_REF }}
 
+      # ext-deps (DPDK etc.) deliberately skipped: l2flow only needs vlib/vnet
       - name: Install VPP build dependencies
         run: |
           cd vpp
           sudo -E apt-get update
           make UNATTENDED=yes install-dep
-          make UNATTENDED=yes install-ext-deps
 
       - name: Inject plugin into VPP source tree
         run: |
           cp -r src/l2flow vpp/src/plugins/l2flow
 
-      - name: Build VPP (release)
+      # build only the plugin target and its library deps, not all of VPP
+      - name: Build l2flow plugin
         run: |
-          cd vpp
-          make build-release
+          cmake -S vpp/src -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          cmake --build build --target l2flow_plugin
 
       - name: Check plugin binary
         run: |
-          PLUGIN=$(find vpp/build-root/install-vpp-native -name 'l2flow_plugin.so' -print -quit)
+          PLUGIN=$(find build -name 'l2flow_plugin.so' -print -quit)
           test -n "$PLUGIN" || { echo "l2flow_plugin.so not built"; exit 1; }
           echo "Built: $PLUGIN"
           mkdir -p artifacts

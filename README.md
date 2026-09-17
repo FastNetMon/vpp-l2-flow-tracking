@@ -73,6 +73,14 @@ make install-dep install-ext-deps
 make build-release
 ```
 
+Fast path (plugin only, no ext-deps/DPDK needed):
+
+```sh
+cmake -S vpp/src -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target l2flow_plugin
+# -> build/lib/*/vpp_plugins/l2flow_plugin.so
+```
+
 The resulting binary is
 `build-root/install-vpp-native/vpp/lib/*/vpp_plugins/l2flow_plugin.so`.
 
